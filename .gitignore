@@ -1,0 +1,6 @@
+/web/jobs/*
+/web/results/*
+/web/user_info/*
+/pre_processing/output/*
+/post_processing/results/*
+/post_processing/user_info/*
