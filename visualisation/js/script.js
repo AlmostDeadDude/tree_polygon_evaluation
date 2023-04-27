@@ -80,3 +80,21 @@ function updateCounts() {
     document.getElementById("total").innerText = totalCanvas;
     document.getElementById("actual").innerText = count;
 }
+
+//restrict the inputs between 0 and 100
+minAvg.addEventListener("change", function () {
+    if (minAvg.value < 0) {
+        minAvg.value = 0;
+    }
+    if (minAvg.value > 100) {
+        minAvg.value = 100;
+    }
+});
+maxAvg.addEventListener("change", function () {
+    if (maxAvg.value < 0) {
+        maxAvg.value = 0;
+    }
+    if (maxAvg.value > 100) {
+        maxAvg.value = 100;
+    }
+});

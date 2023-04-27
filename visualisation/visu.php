@@ -14,7 +14,7 @@ echo '<div class="title-wrapper">
 </div>
 </div>
 <div id="wrapper-container"></div>
-<div id="hidden-wrapper">
+<div id="hidden-wrapper" style="display: none;">
 ';
 
 #iterate through the jobs folder in the web directory and save the contents in an array
@@ -47,6 +47,7 @@ foreach ($files as $file) {
     }
     fclose($handle);
 }
+echo '</div>';
 
 #then get the final results from the post_processing folder
 $final_results = '../post_processing/final_results.txt';
@@ -74,6 +75,7 @@ foreach ($data as $index => $json_obj) {
     $ID = $json_obj[0]['ID'];
     #for this id we search for final results
     $avg_score = $final_results_array[$picture_name]['task_' . $ID]["average"];
+    $num_scores = count($final_results_array[$picture_name]['task_' . $ID]["scores"]);
 
     #calculate canvas size
     $canvas_width = $picture_width;
@@ -81,7 +83,7 @@ foreach ($data as $index => $json_obj) {
 
     #draw the canvas
     echo '<div class="canvas-wrapper">';
-    echo '<h1>Task #' . $ID . ': ' . $number_points . ' points | Average score: <span class="avg" id="avg_' . $ID . '">' . number_format($avg_score, 2) . '</span></h1>';
+    echo '<h1>Task #' . $ID . ': <small>' . $number_points . ' points | ' . $num_scores . ' samples | Mean score: <span class="avg" id="avg_' . $ID . '">' . number_format($avg_score, 2) . '</span></small></h1>';
     echo '<canvas id="canvas_' . $ID . '" width="' . $canvas_width . '" height="' . $canvas_height . '" style="border:1px solid #000000; background-image: url(' . $picture_path . ')"></canvas>';
     echo '<script>
     var canvas_' . $ID . ' = document.getElementById("canvas_' . $ID . '");
