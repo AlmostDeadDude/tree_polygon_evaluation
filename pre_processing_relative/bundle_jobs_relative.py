@@ -73,11 +73,14 @@ def process_txt_file_relative_jobs(filename, population, n_tasks, bundle_size, i
     population_ids = list(range(1, population+1))
     print('Population IDs:', population_ids)
 
+    # then we want to extend the population_ids list with the iterations so we get the pool of size iterations*population
+    pool = population_ids*iterations
+
     # each job file will have n_tasks*bundle_size polygons (usually 5*3=15)
     polygons_in_file = n_tasks*bundle_size
 
-    # for eachg iteration we will randomly draw polygons_in_file polygons from the population
-    final_amount_of_files = polygons_in_file*iterations
+    # for eachg iteration we will randomly draw bundle_size polygons from the pool n_tasks times
+    final_amount_of_files = len(pool)/polygons_in_file
     print('Final amount of job files with used parameters:', final_amount_of_files)
 
     # variable for indexing job files
@@ -88,14 +91,25 @@ def process_txt_file_relative_jobs(filename, population, n_tasks, bundle_size, i
     # variable to store all selection IDs for analyzing the distribution later
     selection_ids = []
 
-    for i in range(iterations):
+    while len(pool) > 0:
         # draw bundle_size random polygons n_tasks times from the population
         # so we draw 3 polygons from the population 5 times and then add them to single list
         random_polygon_ids = []
         for j in range(n_tasks):
-            random_polygon_ids.extend(
-                random.sample(population_ids, bundle_size))
+            triplet = random.sample(pool, bundle_size)
+            # copntinue if the triplet values are unique - else select new triplet
+            while len(triplet) != len(set(triplet)):
+                triplet = random.sample(pool, bundle_size)
+
+            # Add the selected items to the list
+            random_polygon_ids.extend(triplet)
+            # Remove the selected items from the pool
+            for item in triplet:
+                pool.remove(item)
+
         print('Random polygon IDs:', random_polygon_ids)
+        # print('Pool length:', len(pool))
+        print('Progress:', int(100*(1-len(pool)/(iterations*population))), '%')
 
         # find the polygons with the drawn IDs in the indexed data in the same order as they are in the random_polygon_ids list and add them to the job_bundle list
         for polygon_id in random_polygon_ids:
@@ -110,7 +124,7 @@ def process_txt_file_relative_jobs(filename, population, n_tasks, bundle_size, i
                 job_filename = os.path.join(
                     output_folder_path, 'job_{}.txt'.format(job_id))
                 with open(job_filename, 'w') as job_file:
-                    job_file.writelines('\n'.join(str(item)
+                    job_file.writelines('\n'.join(str(item).replace("'", "\"")
                                                   for item in job_bundle))
                 job_id += 1
                 job_bundle = []
@@ -138,4 +152,4 @@ def process_txt_file_relative_jobs(filename, population, n_tasks, bundle_size, i
 
 
 # Example usage
-process_txt_file_relative_jobs('data/70_155.txt', 25, 5, 3, 50)
+process_txt_file_relative_jobs('data/70_155.txt', 100, 5, 3, 15)
