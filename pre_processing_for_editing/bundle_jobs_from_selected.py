@@ -33,7 +33,9 @@ def process_txt_file(folder, first_X_from_file, tasks_per_job):
             filenames.append(os.path.join(folder, file))
 
     # Copy the original txt files to the output folder with indexed lines, make ID counter global
-    i = 0  # Initialize counter
+    # Skip first x valid lines in each file but increase the ID counter
+    skip_first_valid_lines = 0
+    i = 0  # Initialize counter for IDs, here we skip x lines in each of 125 files because we had them already in the previous run, if you start fresh just set both to 0
     global_object = []
     for filename in filenames:
         indexed_filename = os.path.join(
@@ -42,6 +44,7 @@ def process_txt_file(folder, first_X_from_file, tasks_per_job):
             with open(indexed_filename, 'w') as indexed_file:
                 lines = file.readlines()
                 j = 0
+                k = 0
                 for line in lines:
                     # Skip empty lines
                     if not line.strip():
@@ -52,6 +55,10 @@ def process_txt_file(folder, first_X_from_file, tasks_per_job):
                     try:
                         json_data = json.loads(line)
                         if isinstance(json_data, list) and len(json_data) > 0 and isinstance(json_data[0], dict) and 'number' in json_data[0] and 'number_points' in json_data[0] and 'points' in json_data[0]:
+                            # Skip first x valid lines in each file
+                            if k < skip_first_valid_lines:
+                                k += 1
+                                continue
                             # Calculate max and min values for x and y in points
                             points = json_data[0]['points']
                             x_values = [point['x'] for point in points]
@@ -81,6 +88,7 @@ def process_txt_file(folder, first_X_from_file, tasks_per_job):
     # Create jobs by selecting polygons from tasks_per_job different files and putting them together in one job
     # we go in steps of tasks_per_job through the global_object items using their IDs
     job_id = 1
+    # job_id = 251  # Initialize job ID counter, here we start with n+1 because we had n files already in the previous run, if you start fresh just set it to 1 as in the line above
     indices = []  # Store arrays of indices
     # first create the indices array where we take the range from 0 to the number of items in global_object and divide it in chunks of size len(global_object)/tasks_per_job
     indices = list(range(len(global_object)))
@@ -104,4 +112,5 @@ def process_txt_file(folder, first_X_from_file, tasks_per_job):
     print('Job bundles created in:', output_folder_path)
 
 
-process_txt_file('./data/dataset_erlig1_125/txt', 5, 5)
+# process_txt_file('./data/dataset_erlig1_125/txt', 10, 5)
+process_txt_file('./data/ottmarsheim/acquisitions', 30, 5)
