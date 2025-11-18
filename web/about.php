@@ -1,16 +1,20 @@
 <?php
-$firstTime = $_GET['firstTime'];
-$Campaign_id = $_GET["campaign"];
-$Worker_id = $_GET["worker"];
-$Rand_key = $_GET["rand_key"];
+$firstTime = $_GET['firstTime'] ?? 'false';
+$Campaign_id = $_GET["campaign"] ?? "tree_demo_campaign";
+$Worker_id = $_GET["worker"] ?? "guest_reviewer";
+$Rand_key = $_GET["rand_key"] ?? "demo";
 
 @require_once('header.php');
-echo '
+echo <<<HTML
+<section class="info-block hero">
+    <h1>Tree Polygon Evaluation &mdash; Demo version</h1>
+    <p>This crowdsourcing experiment paired aerial imagery with pre-generated polygons and asked remote contributors to judge how well each outline wrapped the tree canopy. The current demo preserves the onboarding journey you see below so visitors can understand how workers were briefed before completing real, paid assignments.</p>
+</section>
 <h2>Introduction</h2>
 <p>Welcome to our tree outline evaluation task! In this task, you will be presented with a series of pictures that contain a tree, and your job is to evaluate how well the selection polygon matches the tree outline. There are five different color-coded categories to choose from: <span class="a pm-5">Very Good</span>, <span class="b pm-5">Good</span>, <span class="c pm-5">Acceptable</span>, <span class="d pm-5">Bad</span>, and <span class="e pm-5">Very Bad</span>. Your ratings will help us to improve the accuracy of our automatic tree selection algorithms in the future.</p>
 <h2>Task Instructions</h2>
 <p>To complete the task, simply click on the button with the appropriate option for each picture. After rating all provided pictures, submit your results and you will receive a unique VCODE to claim your payment. </p>
-<p>It\'s important to evaluate the selection based on how well it matches the tree outline, and not based on any other factors. To help you with this, we have provided example pictures for each of the five categories, which you can refer to as a guide when evaluating the pictures.</p>
+<p>It&apos;s important to evaluate the selection based on how well it matches the tree outline, and not based on any other factors. To help you with this, we have provided example pictures for each of the five categories, which you can refer to as a guide when evaluating the pictures.</p>
 <h2>Examples</h2>
 <h3>Here are some examples of what we mean by each of the five categories:</h3>
 <ul>
@@ -42,12 +46,12 @@ echo '
 </ul>
 <h2>Conclusion</h2>
 <p>Thank you for helping with our research! Your contributions will help us to improve our automatic tree selection algorithms, which will have a wide range of applications in fields such as agriculture, forestry, and urban planning. We appreciate your time and effort, and wish you good luck with the task.</p>
-';
-if ($firstTime == 'true') {
+HTML;
+if (true) {
     echo '<button class="toTaskBtn" onclick="startTask()">Start task</button>';
     echo '<script>
     function startTask() {
-        window.location.href = "index.php?campaign=' . $Campaign_id . '&worker=' . $Worker_id . '&rand_key=' . $Rand_key . '";
+        window.location.href = "index.php?campaign=' . htmlspecialchars($Campaign_id) . '&worker=' . htmlspecialchars($Worker_id) . '&rand_key=' . htmlspecialchars($Rand_key) . '";
     }
     </script>';
 }

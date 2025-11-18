@@ -1,15 +1,12 @@
-//check what is the page name, is it index.php or results.php
+//check what is the page name, is it index.php
 let page = window.location.pathname.split("/").pop();;
 
-//in both cases:
-//update the year in the footer
-document.getElementById("year").innerHTML = new Date().getFullYear();
-
-//specific for index.php and results.php
+//specific for index.php
 if (page === "index.php" || page === "") {
     // variables and dom elements
     const values = {};
     const confirmBtn = document.getElementById("confirmBtn");
+    const completionBox = document.getElementById("demoComplete");
 
     //make rating options selectable (like radio buttons)
     let tasks = document.querySelectorAll(".task-wrapper");
@@ -44,10 +41,9 @@ if (page === "index.php" || page === "") {
         });
     });
 
-    //when confirmed the values are sent to the server = saveResults.php
-    //if it returns the success message, the user is redirected to the results page = results.php
+    //when confirmed the values stay local in demo mode, but we still show the proof code
     if (confirmBtn) {
-        confirmBtn.addEventListener("click", async () => {
+        confirmBtn.addEventListener("click", () => {
             //confirm button should only work if all tasks are rated - otherwise the user gets a warning
             if (Object.keys(values).length < tasks.length) {
                 alert("Please rate all tasks!");
@@ -56,40 +52,27 @@ if (page === "index.php" || page === "") {
                 firstUnratedTask.scrollIntoView({
                     behavior: "smooth",
                 });
-
                 return;
-            } else {
-                //send data as json 
-                let data = JSON.stringify({
-                    userInfo: userInfo,
-                    dataInfo: dataInfo,
-                    values: values,
-                });
-                let response = await fetch("saveResults.php", {
-                    method: "POST",
-                    body: data,
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                });
-                let result = await response.text();
-                console.log(result);
-                if (result == "success") {
-                    window.location.href = "results.php?vcode=" + userInfo.vcode;
-                }
+            }
+
+            confirmBtn.disabled = true;
+            confirmBtn.innerText = "Demo completed";
+
+            if (completionBox) {
+                completionBox.innerHTML = `
+                    <p>Great! Your demo proof code is <strong>${userInfo.proofCode}</strong>. Workers submitted this code on the crowdsourcing platform to confirm completion and receive payment.</p>
+                    <div class="demo-actions">
+                        <a class="primary-link" href="../visualisation/visu.php" target="_blank" rel="noopener noreferrer">Open visualisation</a>
+                        <a class="secondary-link" href="index.php">Rate another job</a>
+                    </div>
+                `;
+                completionBox.classList.add("visible");
+                setTimeout(() => {
+                    completionBox.scrollIntoView({
+                        behavior: "smooth",
+                    });
+                }, 150);
             }
         });
     }
-} else if (page === "results.php") {
-    //the results page onle needs a simple button to copy the vcode to the clipboard
-    const copyBtn = document.getElementById("copyVcodeBtn");
-    const vcodeEl = document.getElementById("vcodeContainer");
-    copyBtn.addEventListener("click", () => {
-        navigator.clipboard.writeText(vcodeEl.innerText.trim());
-        copyBtn.innerText = "Copied!";
-    });
-} else {
-    //page === "about.php"
-    //disable the link to about php - it is not needed
-    document.querySelector('header a').remove();
 }

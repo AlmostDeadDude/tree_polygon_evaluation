@@ -1,144 +1,114 @@
 <?php
 
-//get the microworkers usual staff
-$Campaign_id = $_GET["campaign"];
-$Worker_id = $_GET["worker"];
-$Rand_key = $_GET["rand_key"];
-$My_secret_key = "2a0f6d1b74e582f9ee21c8e899bb014163431b1491255737db06bb587703cfcf";
-// string we will hash to produce VCODE
-$String_final = $Campaign_id . $Worker_id . $Rand_key . $My_secret_key;
-$vcode_for_proof = "mw-" . hash("sha256", $String_final);
-
-//job assignment algorithm
-//first count how many files are in the jobs folder
-$total_numb_jobs = count(glob('jobs/*'));
-//set up the desired number of iterations
-$total_numb_it = 5;
-//default values = error codes for later
-$next_job = 10000;
-$next_it = 10000;
-//check the files in the results folder and assign the next available job
-for ($it = 1; $it <= $total_numb_it; $it++) {                       //for each iteration
-  for ($in = 1; $in <= $total_numb_jobs; $in++) {                   //for each job
-    $file_to_check1 = "results/job_" . $in . '_' . $it . ".txt";    //folder to check for results
-    $existing = file_exists($file_to_check1);                       //check if file exists
-    if ($existing) {                                                //if it does exist
-      $no_of_lines = count(file($file_to_check1));                  //count the number of lines - basically check if empty
-      $last_mod = filemtime($file_to_check1);                       //get the last modification time
-      $cur_time = time();                                           //get the current time
-      $time_since_last_mod = ($cur_time - $last_mod) / 60;          //calculate the time since last modification in minutes
-      if ($no_of_lines < 1 and $time_since_last_mod > 20) {         //if the file is empty and it has been more than 20 minutes since last modification
-        $next_job = $in;                                            //accept the job number
-        $next_it = $it;                                             //and the iteration number
-        unlink($file_to_check1);                                    //delete existing empty file
-        break 2;                                                    //break out of the loops
-      }
-    } else {                                                        //if the file does not exist
-      $next_job = $in;                                              //accept the job number
-      $next_it = $it;                                               //and the iteration number
-      break 2;                                                      //break out of the loops
+function tree_demo_random_key(): string
+{
+    try {
+        return bin2hex(random_bytes(6));
+    } catch (Exception $e) {
+        return (string)round(microtime(true) * 1000);
     }
-  }
-}
-//after job assignment we either end up with a legit job number and iteration number or with error codes
-//in any cas ewe create the appropriate file in results (and user_info) folders
-file_put_contents("results/job_" . $next_job . "_" . $next_it . ".txt", "");
-file_put_contents("user_info/job_" . $next_job . "_" . $next_it . ".txt", "");
-
-//if after the job assignment we have error codes we return an error message
-if ($next_job == 10000 and $next_it == 10000) {
-  @require_once('header.php');
-  echo "<h1>⚠️</h1>
-  <h1>Sorry, there are no more jobs available at the moment.</h1>
-  <h2>Please try again later.</h2>
-  ";
-  @require_once('footer.php');
-  exit();
 }
 
-//if job was assigned we read the appropriate job TXT file line by line
-$json_filename = 'jobs/job_' . $next_job . '.txt';
+$Campaign_id = isset($_GET["campaign"]) && $_GET["campaign"] !== '' ? $_GET["campaign"] : "tree_demo_campaign";
+$Worker_id = isset($_GET["worker"]) && $_GET["worker"] !== '' ? $_GET["worker"] : "guest_reviewer";
+$Rand_key = isset($_GET["rand_key"]) && $_GET["rand_key"] !== '' ? $_GET["rand_key"] : tree_demo_random_key();
+$proof_code = 'DEMO PROOF CODE';
 
-$handle = fopen($json_filename, "r");
-$data = array();
+$absoluteJobPaths = glob(__DIR__ . '/jobs/job_*.txt');
+
+if (!$absoluteJobPaths) {
+    @require_once('header.php');
+    echo '<section class="info-block">
+        <h2>No archived jobs found</h2>
+        <p>The jobs directory is empty, so the Tree Polygon Evaluation demo cannot load any examples. Please add at least one job file to <code>web/jobs</code>.</p>
+    </section>';
+    @require_once('footer.php');
+    exit();
+}
+
+$selectedJobPath = $absoluteJobPaths[array_rand($absoluteJobPaths)];
+$jobFilename = basename($selectedJobPath);
+$json_filename = 'jobs/' . $jobFilename;
+preg_match('/job_(\d+)\.txt$/', $jobFilename, $jobNumberMatches);
+$selectedJobNumber = isset($jobNumberMatches[1]) ? (int)$jobNumberMatches[1] : $jobFilename;
+
+$handle = fopen($selectedJobPath, "r");
+$data = [];
 while (($line = fgets($handle)) !== false) {
-  // Skip empty lines
-  if (trim($line) === '') {
-    continue;
-  }
+    if (trim($line) === '') {
+        continue;
+    }
 
-  // Parse JSON from each line
-  $json_data = json_decode($line, true);
-  if ($json_data === null) {
-    echo 'Error parsing JSON: ' . json_last_error_msg() . PHP_EOL;
-    continue;
-  }
+    $json_data = json_decode($line, true);
+    if ($json_data === null) {
+        continue;
+    }
 
-  // Append parsed JSON to data array
-  $data[] = $json_data;
+    $data[] = $json_data;
 }
 fclose($handle);
 
-// Calculate canvas size based on background image
-$bg_image_filename = 'pics/70.png'; // TODO: Update with the actual filename of the background image
+$bg_image_filename = 'pics/70.png';
 $bg_image_info = getimagesize($bg_image_filename);
 $bg_image_width = $bg_image_info[0];
 $bg_image_height = $bg_image_info[1];
 
 require_once('header.php');
 
-// Iterate through data array
+echo '<section class="info-block hero">
+    <h1>Tree Polygon Evaluation &mdash; Demo version</h1>
+    <p>This read-only build mirrors the original crowdsourcing task: you receive a random archived assignment (currently job <strong>#' . htmlspecialchars((string)$selectedJobNumber) . '</strong>), review the polygons, and finish with a demo proof code that historically confirmed payment on the crowdsourcing platform.</p>
+</section>';
+
+if (empty($data)) {
+    echo '<section class="info-block">
+        <h2>No tasks found in this job</h2>
+        <p>The randomly selected archive file did not contain any task definitions. Refresh the page to load a different job.</p>
+    </section>';
+}
+
 foreach ($data as $index => $json_obj) {
-  // Extract data
-  $points = $json_obj[0]['points'];
-  $number_points = $json_obj[0]['number_points'];
-  $ID = $json_obj[0]['ID'];
-  // $max_x = $json_obj[0]['max_x'];
-  // $min_x = $json_obj[0]['min_x'];
-  // $max_y = $json_obj[0]['max_y'];
-  // $min_y = $json_obj[0]['min_y'];
+    $points = $json_obj[0]['points'];
+    $number_points = $json_obj[0]['number_points'];
+    $ID = $json_obj[0]['ID'];
+    if (empty($points)) {
+        continue;
+    }
+    $canvas_width = $bg_image_width;
+    $canvas_height = $bg_image_height;
 
-  // Calculate canvas size
-  $canvas_width = $bg_image_width; //$max_x - $min_x;
-  $canvas_height = $bg_image_height; //$max_y - $min_y;
-
-  // Output canvas and points
-  echo '<div class="task-wrapper" id="task_' . $ID . '">';
-  echo '<div class="canvas-wrapper">';
-  echo '<h1>Task #' . $ID . ': ' . $number_points . ' corners</h1>';
-  echo '<canvas id="canvas_' . $index . '" width="' . $canvas_width . '" height="' . $canvas_height . '" style="background-image:url(' . $bg_image_filename . ');border:1px solid black;"></canvas>';
-  echo '<script>
-          var canvas_' . $index . ' = document.getElementById("canvas_' . $index . '");
-          var ctx_' . $index . ' = canvas_' . $index . '.getContext("2d");
-          ctx_' . $index . '.fillStyle = "rgba(255,255,255,0.1)";
-          ctx_' . $index . '.lineWidth = "5";
-          ctx_' . $index . '.strokeStyle = "black";
-          // Draw points and lines on canvas
-          ';
-  foreach ($points as $i => $point) {
-    echo 'var x' . $i . ' = ' . $point['x'] . ';
-          var y' . $i . ' = ' . $point['y'] . ';
-          ctx_' . $index . '.arc(x' . $i . ', y' . $i . ', 2, 0, 2 * Math.PI);
-          ';
-  }
-  echo 'ctx_' . $index . '.fill();
-          ';
-  echo 'ctx_' . $index . '.beginPath();
-          ctx_' . $index . '.moveTo(x0, y0);
-          ';
-  for ($i = 1; $i < count($points); $i++) {
-    echo 'ctx_' . $index . '.lineTo(x' . $i . ', y' . $i . ');
-          ';
-  }
-  echo 'ctx_' . $index . '.lineTo(x0, y0);
-          ctx_' . $index . '.stroke();
-          ctx_' . $index . '.closePath();
-          ';
-  echo '</script>';
-  echo '</div>';
-  echo '
+    echo '<div class="task-wrapper" id="task_' . htmlspecialchars($ID) . '">';
+    echo '<div class="canvas-wrapper">';
+    echo '<h1>Task #' . htmlspecialchars($ID) . ': ' . htmlspecialchars($number_points) . ' corners</h1>';
+    echo '<canvas id="canvas_' . $index . '" width="' . $canvas_width . '" height="' . $canvas_height . '" style="background-image:url(' . $bg_image_filename . ');border:1px solid black;"></canvas>';
+    echo '<script>
+        var canvas_' . $index . ' = document.getElementById("canvas_' . $index . '");
+        var ctx_' . $index . ' = canvas_' . $index . '.getContext("2d");
+        ctx_' . $index . '.fillStyle = "rgba(255,255,255,0.1)";
+        ctx_' . $index . '.lineWidth = "5";
+        ctx_' . $index . '.strokeStyle = "black";
+        ';
+    foreach ($points as $i => $point) {
+        echo 'ctx_' . $index . '.beginPath();
+        ctx_' . $index . '.arc(' . $point['x'] . ', ' . $point['y'] . ', 2, 0, 2 * Math.PI);
+        ctx_' . $index . '.fill();
+        ';
+    }
+    echo 'ctx_' . $index . '.beginPath();
+        ctx_' . $index . '.moveTo(' . $points[0]['x'] . ', ' . $points[0]['y'] . ');
+        ';
+    for ($i = 1; $i < count($points); $i++) {
+        echo 'ctx_' . $index . '.lineTo(' . $points[$i]['x'] . ', ' . $points[$i]['y'] . ');
+        ';
+    }
+    echo 'ctx_' . $index . '.lineTo(' . $points[0]['x'] . ', ' . $points[0]['y'] . ');
+        ctx_' . $index . '.stroke();
+        ctx_' . $index . '.closePath();
+    </script>';
+    echo '</div>';
+    echo '
     <div class="rating-wrapper">
-      <h2>Please rate this selection</h2>
+      <h2>How well does this outline match the tree?</h2>
       <div class="rating-options">
           <div class="rating a" result-value="100">Very good</div>
           <div class="rating b" result-value="75">Good</div>
@@ -148,24 +118,30 @@ foreach ($data as $index => $json_obj) {
       </div>
     </div>
   ';
-  echo '</div>';
+    echo '</div>';
 }
 
+echo '<p class="demo-note">Rate every task to reveal the DEMO PROOF CODE that workers previously submitted on the crowdsourcing platform to receive payment.</p>';
+echo '<button id="confirmBtn">Finish demo</button>';
+echo '<div id="demoComplete" class="demo-complete" aria-live="polite"></div>';
+
+$userInfo = [
+    'campaign' => $Campaign_id,
+    'worker' => $Worker_id,
+    'proofCode' => $proof_code
+];
+
+$dataInfo = [
+    'file' => $json_filename,
+    'image' => $bg_image_filename,
+    'job' => $selectedJobNumber,
+    'iteration' => 'demo',
+    'mode' => 'readonly'
+];
+
 echo '<script>';
-echo '
-const userInfo = {
-  campaign: "' . $Campaign_id . '",
-  worker: "' . $Worker_id . '",
-  vcode: "' . $vcode_for_proof . '"
-};
-const dataInfo = {
-  file: "' . $json_filename . '",
-  image: "' . $bg_image_filename . '",
-  job: "' . $next_job . '",
-  iteration: "' . $next_it . '",
-};
-';
+echo 'const userInfo = ' . json_encode($userInfo, JSON_UNESCAPED_SLASHES) . ';';
+echo 'const dataInfo = ' . json_encode($dataInfo, JSON_UNESCAPED_SLASHES) . ';';
 echo '</script>';
 
-echo '<button id="confirmBtn">Confirm</button>';
 require_once('footer.php');

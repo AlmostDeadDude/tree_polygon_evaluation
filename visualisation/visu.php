@@ -1,5 +1,13 @@
 <?php
 @require_once '../web/header.php';
+echo '<section class="info-block hero">
+<h1>Historical results visualisation</h1>
+<p>This dashboard was originally limited to campaign owners. For the Tree Polygon Evaluation demo it is publicly accessible so clients can see how crowdsourced ratings translated into actionable insights.</p>
+<div class="demo-actions">
+<a class="primary-link" href="../web/index.php">Back to the task demo</a>
+</div>
+</section>';
+
 echo '<div class="title-wrapper">
 <div id="titleString">
 <h1>Results visualisation (<span id="actual">NaN</span>/<span id="total">NaN</span> shown)</h1>
@@ -51,6 +59,15 @@ echo '</div>';
 
 #then get the final results from the post_processing folder
 $final_results = '../post_processing/final_results.txt';
+$final_results_json = '';
+if (!file_exists($final_results)) {
+    echo '<section class="info-block">
+    <h2>Missing aggregated data</h2>
+    <p>The file <code>post_processing/final_results.txt</code> was not found, so the visualisation cannot load scores. Please generate it by running the aggregation script.</p>
+    </section>';
+    @require_once '../web/footer.php';
+    exit;
+}
 $handle = fopen($final_results, "r");
 #simply read the json
 $final_results_json = fgets($handle);

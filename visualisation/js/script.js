@@ -1,6 +1,3 @@
-//update the year in the footer
-document.getElementById("year").innerHTML = new Date().getFullYear();
-
 //color each span.avg depending on the value of innerText
 //87.5-100: class a
 //62.5-87.5: class b
@@ -64,10 +61,14 @@ function filterResults() {
     let values = document.querySelectorAll(".avg");
     values.forEach(value => {
         let avg = +value.innerText;
+        let wrapper = value.closest(".canvas-wrapper");
+        if (!wrapper) {
+            return;
+        }
         if (avg < min || avg > max) {
-            value.parentElement.parentElement.classList.add("hidden");
+            wrapper.classList.add("hidden");
         } else {
-            value.parentElement.parentElement.classList.remove("hidden");
+            wrapper.classList.remove("hidden");
         }
     });
     totalCanvas = document.querySelectorAll(".canvas-wrapper").length;
