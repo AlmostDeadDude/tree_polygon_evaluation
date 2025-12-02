@@ -1,4 +1,1 @@
-RewriteEngine On
-
-# Если человек зашёл прямо в project_foo/
-RewriteRule ^$ web/about.php [L]
+DirectoryIndex about.php index.php
