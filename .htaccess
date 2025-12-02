@@ -1,4 +1,0 @@
-RewriteEngine On
-
-# when directly accessed project_foo/
-RewriteRule ^$ web/index.php [L]
